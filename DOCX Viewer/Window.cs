@@ -109,9 +109,9 @@ namespace Viewer
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(exception.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
