@@ -1,11 +1,13 @@
-﻿using System.Reflection;
+﻿// This file was changed with Claude Code (Anthropic): description and version.
+
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 // Bir bütünleştirilmiş koda ilişkin Genel Bilgiler aşağıdaki öznitelikler kümesiyle
 // denetlenir. Bütünleştirilmiş kod ile ilişkili bilgileri değiştirmek için
 // bu öznitelik değerlerini değiştirin.
 [assembly: AssemblyTitle("DOCX Viewer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Viewer for Word 2007, 2010, 2013 and 2016 documents")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("DOCX Viewer")]
@@ -31,5 +33,5 @@ using System.Runtime.InteropServices;
 // Tüm değerleri belirtebilir veya varsayılan Derleme ve Düzeltme Numaralarını kullanmak için
 // aşağıda gösterildiği gibi '*' kullanabilirsiniz:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.1.0.1")]
-[assembly: AssemblyFileVersion("0.1.0.1")]
+[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
