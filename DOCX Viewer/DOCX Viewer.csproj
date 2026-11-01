@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- This file was changed with Claude Code (Anthropic): .NET Framework 4.0 target and new source files. -->
+<!-- This file was changed with Claude Code Opus 5.5. -->
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -93,4 +93,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Without the .NET Framework 4.0 targeting pack, mscorlib is resolved from the
+       Windows folder and copied to the output folder with its resource and .nlp
+       files. Files of the installed .NET Framework must never be copied. -->
+  <Target Name="RemoveFrameworkFilesFromOutput" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FullPath)').ToUpperInvariant().StartsWith($([System.String]::Copy('$(WINDIR)\MICROSOFT.NET\').ToUpperInvariant())))" />
+    </ItemGroup>
+  </Target>
 </Project>

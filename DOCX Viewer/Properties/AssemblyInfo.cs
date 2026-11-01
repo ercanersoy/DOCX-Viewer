@@ -1,4 +1,4 @@
-﻿// This file was changed with Claude Code (Anthropic): description and version.
+﻿// This file was changed with Claude Code Opus 5.5.
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("DOCX Viewer")]
-[assembly: AssemblyCopyright("Copyright © 2024 Ercan Ersoy")]
+[assembly: AssemblyCopyright("Copyright © 2024-2026 Ercan Ersoy")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

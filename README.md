@@ -2,6 +2,12 @@
 
 A DOCX Viewer for .NET Framework 4.0
 
+Copyright (c) 2024-2026 Ercan Ersoy
+
+This project is licensed under MIT License.
+
+![DOCX Viewer screenshot](screenshot.png)
+
 Shows documents that were created with Word 2007, 2010, 2013 and 2016
 (.docx, .docm, .dotx and .dotm files, transitional and strict Open XML).
 
@@ -19,9 +25,5 @@ argument.
 
 Keyboard shortcuts: Ctrl+O (open), Ctrl+F (find), F3 (find next),
 Ctrl++ / Ctrl+- (zoom), Ctrl+0 (actual size).
-
-Copyright (c) 2024 Ercan Ersoy
-
-This projects is licensed under MIT License.
 
 Parts of this project were changed with Claude Code (Anthropic).

@@ -1,8 +1,6 @@
-﻿// Copyright (c) 2024 Ercan Ersoy
+﻿// Copyright (c) 2024-2026 Ercan Ersoy
 //
-// Written by Ercan Ersoy.
-// This file was changed with Claude Code (Anthropic): a document can be
-// given as a command line argument (for example "Open with" in Explorer).
+// Written with Claude Code Opus 5.5.
 
 using System;
 using System.Windows.Forms;

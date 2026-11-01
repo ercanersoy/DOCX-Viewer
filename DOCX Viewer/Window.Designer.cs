@@ -1,8 +1,6 @@
-﻿// Copyright (c) 2024 Ercan Ersoy
+﻿// Copyright (c) 2024-2026 Ercan Ersoy
 //
-// Written by Ercan Ersoy.
-// This file was changed with Claude Code (Anthropic): the menu-free,
-// button based and resizable user interface.
+// Written with Claude Code Opus 5.5.
 
 namespace Viewer
 {

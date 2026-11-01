@@ -1,10 +1,6 @@
-﻿// Copyright (c) 2024 Ercan Ersoy
+﻿// Copyright (c) 2024-2026 Ercan Ersoy
 //
-// Written by Ercan Ersoy.
-// Also, take advantage of ChatGPT GPT-4o and GitHub Copilot.
-// This file was changed with Claude Code (Anthropic): Word 2007-2016
-// compatible document loading, button based interface, zoom, find,
-// drag and drop and command line support.
+// Written with ChatGPT GPT-4o, GitHub Copilot and Claude Code Opus 5.5.
 
 using System;
 using System.Drawing;
@@ -40,6 +36,7 @@ namespace Viewer
             Area_RichTextBox.EnableAutoDragDrop = false;
             Area_RichTextBox.DragEnter += Window_Form_DragEnter;
             Area_RichTextBox.DragDrop += Window_Form_DragDrop;
+            Area_RichTextBox.MouseWheel += Area_RichTextBox_MouseWheel;
 
             Update_Status(null);
         }
@@ -209,10 +206,27 @@ namespace Viewer
 
         #region Zoom
 
+        private void Area_RichTextBox_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if ((ModifierKeys & Keys.Control) != Keys.Control || e.Delta == 0)
+            {
+                return;
+            }
+
+            // Ctrl + mouse wheel uses the same zoom levels as the buttons, so
+            // the zoom of the status bar and of newly opened documents stays right.
+            HandledMouseEventArgs handled = e as HandledMouseEventArgs;
+            if (handled != null)
+            {
+                handled.Handled = true;
+            }
+
+            Change_Zoom(e.Delta > 0 ? 1 : -1);
+        }
+
         private void Change_Zoom(int direction)
         {
-            // The user may also zoom with Ctrl + mouse wheel.
-            float current = Area_RichTextBox.ZoomFactor;
+            float current = zoom;
             float next = current;
 
             if (direction > 0)

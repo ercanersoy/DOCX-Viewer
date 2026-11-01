@@ -1,11 +1,6 @@
-﻿// Copyright (c) 2024 Ercan Ersoy
+﻿// Copyright (c) 2024-2026 Ercan Ersoy
 //
-// This file was created with Claude Code (Anthropic).
-//
-// Converts Word 2007, 2010, 2013 and 2016 documents (.docx, .docm, .dotx,
-// .dotm, transitional and strict Open XML) to RTF so that they can be shown
-// in a RichTextBox. The converter works on the XML level so that it does not
-// depend on newer element types and it is compatible with .NET Framework 4.0.
+// This file was created with Claude Code Opus 5.5.
 
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -103,6 +98,7 @@ namespace Viewer
             public string Font = "Times New Roman";
             public string FontEastAsia;
             public string FontComplex;
+            public string Language; // for example "en-US" or "tr-TR"
             public int HalfPoints = 20;
             public Color? ForeColor, Highlight, Shading;
 
@@ -1293,13 +1289,7 @@ namespace Viewer
 
         private void RenderDrawing(OpenXmlElement drawing, StringBuilder sb, RunProps rp)
         {
-            OpenXmlElement textBox = FindDescendant(drawing, "txbxContent");
-
-            if (textBox != null)
-            {
-                RenderTextBox(textBox, sb);
-                return;
-            }
+            bool hasTextBox = RenderTextBoxes(drawing, sb);
 
             long cx = 0, cy = 0;
             OpenXmlElement extent = FindDescendant(drawing, "extent");
@@ -1309,10 +1299,11 @@ namespace Viewer
                 long.TryParse(Attr(extent, "cy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out cy);
             }
 
+            // Pictures inside a text box were already shown with the text box.
             List<OpenXmlElement> blips = new List<OpenXmlElement>();
             foreach (OpenXmlElement element in drawing.Descendants())
             {
-                if (element.LocalName == "blip")
+                if (element.LocalName == "blip" && !IsInsideTextBox(element, drawing))
                 {
                     blips.Add(element);
                 }
@@ -1320,6 +1311,11 @@ namespace Viewer
 
             if (blips.Count == 0)
             {
+                if (hasTextBox)
+                {
+                    return;
+                }
+
                 if (FindDescendant(drawing, "chart") != null)
                 {
                     EmitText(sb, rp, "[Chart]", true);
@@ -1334,7 +1330,10 @@ namespace Viewer
             foreach (OpenXmlElement blip in blips)
             {
                 string id = AttrR(blip, "embed");
-                if (blips.Count == 1)
+
+                // The extent is the size of the whole drawing, so it fits a
+                // picture only when the picture is alone in the drawing.
+                if (blips.Count == 1 && !hasTextBox)
                 {
                     EmitImage(sb, rp, id, (int)(cx / 635), (int)(cy / 635));
                 }
@@ -1347,16 +1346,11 @@ namespace Viewer
 
         private void RenderVml(OpenXmlElement pict, StringBuilder sb, RunProps rp)
         {
-            OpenXmlElement textBox = FindDescendant(pict, "txbxContent");
-
-            if (textBox != null)
-            {
-                RenderTextBox(textBox, sb);
-            }
+            RenderTextBoxes(pict, sb);
 
             foreach (OpenXmlElement element in pict.Descendants())
             {
-                if (element.LocalName != "imagedata")
+                if (element.LocalName != "imagedata" || IsInsideTextBox(element, pict))
                 {
                     continue;
                 }
@@ -1392,6 +1386,43 @@ namespace Viewer
 
                 EmitImage(sb, rp, id, width, height);
             }
+        }
+
+        private static bool IsInsideTextBox(OpenXmlElement element, OpenXmlElement root)
+        {
+            for (OpenXmlElement parent = element.Parent; parent != null && parent != root; parent = parent.Parent)
+            {
+                if (parent.LocalName == "txbxContent")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Shows all text boxes of a drawing (a group can contain more than
+        /// one). Text boxes inside other text boxes are shown by their parent.
+        /// </summary>
+        private bool RenderTextBoxes(OpenXmlElement root, StringBuilder sb)
+        {
+            List<OpenXmlElement> textBoxes = new List<OpenXmlElement>();
+
+            foreach (OpenXmlElement element in root.Descendants())
+            {
+                if (element.LocalName == "txbxContent" && !IsInsideTextBox(element, root))
+                {
+                    textBoxes.Add(element);
+                }
+            }
+
+            foreach (OpenXmlElement textBox in textBoxes)
+            {
+                RenderTextBox(textBox, sb);
+            }
+
+            return textBoxes.Count > 0;
         }
 
         private void RenderTextBox(OpenXmlElement textBox, StringBuilder sb)
@@ -1521,7 +1552,9 @@ namespace Viewer
 
             if (rp.Caps || rp.SmallCaps)
             {
-                text = text.ToUpper(CultureInfo.CurrentCulture);
+                // The language of the text decides the casing rules (for
+                // example the Turkish dotted capital I), not the system.
+                text = text.ToUpper(GetCulture(rp.Language));
                 if (rp.SmallCaps && !rp.Caps)
                 {
                     effective = rp.Clone();
@@ -1563,6 +1596,23 @@ namespace Viewer
                     currentCharset = charset;
                 }
             }
+        }
+
+        private static CultureInfo GetCulture(string language)
+        {
+            if (!string.IsNullOrEmpty(language))
+            {
+                try
+                {
+                    return CultureInfo.GetCultureInfo(language);
+                }
+                catch (ArgumentException)
+                {
+                    // Unknown language tag.
+                }
+            }
+
+            return CultureInfo.InvariantCulture;
         }
 
         private void EmitSegment(StringBuilder sb, RunProps rp, string text, int charset)
@@ -2207,6 +2257,13 @@ namespace Viewer
                     case "shd":
                         rp.Shading = ParseColor(Attr(child, "fill"));
                         break;
+                    case "lang":
+                        string language = Attr(child, "val");
+                        if (!string.IsNullOrEmpty(language))
+                        {
+                            rp.Language = language;
+                        }
+                        break;
                 }
             }
         }
@@ -2675,8 +2732,9 @@ namespace Viewer
 
             value = value.Trim();
             double factor = 1;
-            string[] units = { "pt", "in", "cm", "mm", "pc", "pi" };
-            double[] factors = { 20, 1440, 1440 / 2.54, 144 / 2.54, 240, 240 };
+            // "px" (1/96 inch) is used in the style of VML pictures.
+            string[] units = { "pt", "in", "cm", "mm", "pc", "pi", "px" };
+            double[] factors = { 20, 1440, 1440 / 2.54, 144 / 2.54, 240, 240, 15 };
 
             for (int i = 0; i < units.Length; i++)
             {

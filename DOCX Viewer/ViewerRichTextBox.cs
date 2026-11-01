@@ -1,10 +1,6 @@
-﻿// Copyright (c) 2024 Ercan Ersoy
+﻿// Copyright (c) 2024-2026 Ercan Ersoy
 //
-// This file was created with Claude Code (Anthropic).
-//
-// A read-only RichTextBox that uses RichEdit 4.1 (msftedit.dll) when it is
-// available. RichEdit 4.1 shows PNG/JPEG pictures and tables much better than
-// the RichEdit 2.0/3.0 control that .NET Framework 4.0 uses by default.
+// Written with Claude Code Opus 5.5.
 
 using System;
 using System.Drawing;
