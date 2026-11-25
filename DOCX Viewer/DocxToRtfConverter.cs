@@ -201,6 +201,7 @@ namespace Viewer
         private readonly Dictionary<string, string> footnoteMarks = new Dictionary<string, string>();
         private readonly List<string> endnoteOrder = new List<string>();
         private readonly Dictionary<string, string> endnoteMarks = new Dictionary<string, string>();
+        private int footnoteNumber, endnoteNumber;
         private string currentNoteMark = "";
 
         private static readonly Dictionary<string, Color> highlightColors = CreateHighlightColors();
@@ -237,6 +238,7 @@ namespace Viewer
                 OpenXmlElement firstSection = FindFirstSection(bodyElement);
 
                 RenderHeaderFooter(firstSection, "headerReference", true);
+                fieldStack.Clear();
                 RenderBlocks(bodyElement, body, null);
                 RenderNotes(true);
                 RenderNotes(false);
@@ -330,6 +332,9 @@ namespace Viewer
                 AppendSeparator(body);
             }
 
+            // A field cannot go on from one part of the document to another, so
+            // an unclosed field must not hide the rest of the document.
+            fieldStack.Clear();
             previousParagraphStyle = null;
             RenderBlocks(part.RootElement, body, null);
 
@@ -380,6 +385,7 @@ namespace Viewer
                 if (notes.TryGetValue(order[i], out note))
                 {
                     currentNoteMark = marks[order[i]];
+                    fieldStack.Clear();
                     previousParagraphStyle = null;
                     RenderBlocks(note, body, null);
                 }
@@ -814,10 +820,7 @@ namespace Viewer
                         sb.Append("\\clcbpat").Append(GetColorIndex(fill.Value));
                     }
 
-                    if (borders)
-                    {
-                        sb.Append("\\clbrdrt\\brdrs\\brdrw10\\clbrdrl\\brdrs\\brdrw10\\clbrdrb\\brdrs\\brdrw10\\clbrdrr\\brdrs\\brdrw10");
-                    }
+                    AppendCellBorders(sb, borders, Child(tcPr, "tcBorders"));
 
                     int width = 0;
                     for (int i = 0; i < span; i++)
@@ -931,6 +934,39 @@ namespace Viewer
                     {
                         CollectChildren(chosen, name, result);
                     }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Writes the borders of a cell. The borders of the table are used
+        /// unless the cell has its own borders (tcBorders) for a side.
+        /// </summary>
+        private static void AppendCellBorders(StringBuilder sb, bool tableBorders, OpenXmlElement tcBorders)
+        {
+            string[] sides = { "top", "left", "bottom", "right" };
+            string[] alternateSides = { null, "start", null, "end" };
+            string[] codes = { "\\clbrdrt", "\\clbrdrl", "\\clbrdrb", "\\clbrdrr" };
+
+            for (int i = 0; i < sides.Length; i++)
+            {
+                bool visible = tableBorders;
+                OpenXmlElement side = Child(tcBorders, sides[i]);
+
+                if (side == null && alternateSides[i] != null)
+                {
+                    side = Child(tcBorders, alternateSides[i]);
+                }
+
+                if (side != null)
+                {
+                    string value = Attr(side, "val");
+                    visible = value != null && value != "none" && value != "nil";
+                }
+
+                if (visible)
+                {
+                    sb.Append(codes[i]).Append("\\brdrs\\brdrw10");
                 }
             }
         }
@@ -1193,14 +1229,33 @@ namespace Viewer
             Dictionary<string, string> marks = footnote ? footnoteMarks : endnoteMarks;
             string mark;
 
+            bool customMark = IsTrue(Attr(reference, "customMarkFollows"));
+
             if (!marks.TryGetValue(id, out mark))
             {
                 order.Add(id);
-                mark = footnote ? order.Count.ToString(CultureInfo.InvariantCulture) : ToRoman(order.Count).ToLowerInvariant();
+
+                if (customMark)
+                {
+                    // A note with a custom mark (for example "*") does not use
+                    // a number, so the numbering of the other notes goes on.
+                    mark = "";
+                }
+                else if (footnote)
+                {
+                    footnoteNumber++;
+                    mark = footnoteNumber.ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    endnoteNumber++;
+                    mark = ToRoman(endnoteNumber).ToLowerInvariant();
+                }
+
                 marks.Add(id, mark);
             }
 
-            if (!IsTrue(Attr(reference, "customMarkFollows")))
+            if (!customMark)
             {
                 EmitText(sb, rp, mark, false);
             }
